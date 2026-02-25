@@ -1,4 +1,4 @@
-Resultados de Simulación
+## Resultados de Simulación
 
 La simulación del módulo mux4to1 fue ejecutada mediante el banco de pruebas desarrollado en SystemVerilog.
 
@@ -28,4 +28,5 @@ confirma que el módulo se comporta correctamente para todos los casos evaluados
 
 Además, la simulación finalizó sin errores ni advertencias críticas, lo que valida el correcto funcionamiento del diseño antes de la etapa de síntesis.
 
-Adjuta imagen de la consola.
+## Adjuta imagen de la consola.
+<img width="1575" height="457" alt="image" src="https://github.com/user-attachments/assets/ea22dcda-9f59-4261-b54e-3743673d520f" />
