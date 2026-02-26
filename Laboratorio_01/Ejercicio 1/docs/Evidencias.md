@@ -20,7 +20,7 @@ La simulación confirma que el módulo implementa correctamente el complemento a
 
 ## Captura de simulación
 
-![Simulación complemento a 2](simulacion_complemento2.png)
+![Simulación complemento a 2](simulacion_complemento2.jpeg)
 
 ## Conclusión
 
