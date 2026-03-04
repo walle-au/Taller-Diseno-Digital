@@ -1,4 +1,4 @@
-# 📈 Análisis de Resultados – Simulación Behavioral
+# Análisis de Resultados – Simulación Behavioral
 
 ## 1️⃣ Caso: duty_code = 4 (≈ 26%)
 
@@ -68,7 +68,7 @@ El diseño cumple con las especificaciones funcionales.
 
 ---
 
-# 🧱 Explicación del Schematic
+# Explicación del Schematic
 
 El schematic generado en Vivado muestra los siguientes bloques principales:
 
@@ -101,7 +101,7 @@ Si es falso → `pwm_out = 0`
 
 ---
 
-## 🧠 Interpretación del Hardware
+## Interpretación del Hardware
 
 El circuito implementa:
 
@@ -113,7 +113,7 @@ El diseño es completamente sintetizable y no presenta latches.
 
 ---
 
-# 🧪 Resultados en FPGA (Pendiente de prueba en hardware)
+# Resultados en FPGA (Pendiente de prueba en hardware)
 
 ## Prueba con LED
 
@@ -127,13 +127,13 @@ Aquí se documentarán los resultados obtenidos al implementar el diseño en la 
 
 ---
 
-### 📌 Evidencia en hardware
+### Evidencia en hardware
 
 ![Foto FPGA prueba PWM](docs/fpga_pwm_test.jpg)
 
 ---
 
-# 📌 Conclusión Final
+# Conclusión Final
 
 El módulo PWM cumple con:
 
