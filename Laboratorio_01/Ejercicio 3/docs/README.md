@@ -18,11 +18,8 @@ Duty cycle ≈ 26%
 
 Esto confirma que el cálculo del threshold y el comparador funcionan correctamente.
 
-### 📌 Imagen correspondiente (Caso duty_code = 4)
+<img width="1612" height="739" alt="image" src="https://github.com/user-attachments/assets/8aa2dd10-abd9-4316-a8d9-71acf10a36c0" />
 
-![Waveform duty 4](docs/waveform_duty4.png)
-
----
 
 ## 2️⃣ Transición cuando counter alcanza el threshold
 
@@ -35,11 +32,8 @@ En esta imagen se observa claramente que:
 
 Esto confirma que el comparador `<` está funcionando correctamente.
 
-### 📌 Imagen correspondiente (Transición en threshold)
+<img width="1607" height="736" alt="image" src="https://github.com/user-attachments/assets/a17d8cc8-66d7-4b4e-b9f1-736bce0b4fbe" />
 
-![Waveform transición threshold](docs/waveform_threshold.png)
-
----
 
 ## 3️⃣ Cambio de duty_code de 4 a 8 (≈ 53%)
 
@@ -57,11 +51,8 @@ Duty cycle ≈ 53%
 
 Se observa visualmente que el pulso permanece más tiempo en alto.
 
-### 📌 Imagen correspondiente (Cambio a duty 8)
+<img width="1611" height="776" alt="image" src="https://github.com/user-attachments/assets/de919523-f39e-40cb-a8dc-eaa6e815b950" />
 
-![Waveform duty 8](docs/waveform_duty8.png)
-
----
 
 # 🔎 Conclusión de la Simulación
 
