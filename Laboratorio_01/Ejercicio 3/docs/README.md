@@ -54,7 +54,7 @@ Se observa visualmente que el pulso permanece más tiempo en alto.
 <img width="1611" height="776" alt="image" src="https://github.com/user-attachments/assets/de919523-f39e-40cb-a8dc-eaa6e815b950" />
 
 
-# 🔎 Conclusión de la Simulación
+# Conclusión de la Simulación
 
 La simulación demuestra que:
 
