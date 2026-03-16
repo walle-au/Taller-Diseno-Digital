@@ -536,7 +536,7 @@ El siguiente diagrama muestra cómo interactúa el testbench con el sistema dura
 flowchart LR
 TB[Testbench] --> DUT[Modulo bajo prueba]
 DUT --> OUT[Salidas del sistema]
-TB --> IN[Senales de entrada]
+TB --> IN[Señales de entrada]
 IN --> DUT
 ```
 
@@ -583,3 +583,269 @@ las salidas generadas corresponden con la lógica del sistema.
 
 El uso de un testbench es una etapa fundamental en el proceso de diseño de sistemas digitales. Mediante la simulación es posible verificar el comportamiento del sistema antes de su implementación física, lo que permite reducir errores y mejorar la calidad del diseño.
 La verificación realizada mediante el testbench asegura que el sistema cumple con las especificaciones establecidas y funciona correctamente bajo diferentes condiciones de entrada.
+
+## 7. Tablas de Verdad, Tablas de Operación y Diagramas del Módulo uart_top
+## 7.1 Introducción
+
+El módulo uart_top integra la lógica principal del sistema y conecta los siguientes bloques:
+generador de baud rate,
+receptor UART,
+transmisor UART,
+sincronizador del botón,
+detector de flanco de subida,
+máquina de estados para transmitir el mensaje "Hola mundo\r\n",
+y lógica para mostrar en los LEDs el último byte recibido.
+Debido a que este módulo contiene tanto lógica combinacional como lógica secuencial, su documentación formal requiere varios tipos de tablas:
+tablas de verdad, para señales combinacionales,
+tablas de operación, para bloques secuenciales,
+tablas de transición, para la FSM,
+tablas de contenido, para documentar el mensaje transmitido.
+
+## 7.2 Diagrama General del Módulo uart_top
+
+El siguiente diagrama resume la estructura general del módulo principal.
+```mermaid
+flowchart TD
+    A[clk rst_n] --> B[uart_baudgen]
+    B --> C[tick_16x]
+
+    C --> D[uart_rx]
+    E[uart_rx serial] --> D
+    D --> F[rx_data]
+    D --> G[rx_valid]
+    D --> H[rx_framing_error]
+
+    F --> I[Registro de LEDs]
+    G --> I
+    I --> J[leds 7:0]
+
+    K[btn_send] --> L[Sincronizador de boton]
+    L --> M[Detector de flanco btn_rise]
+
+    C --> N[uart_tx]
+    O[FSM de envio] --> N
+    N --> P[uart_tx serial]
+
+    M --> O
+    Q[MSG Hola mundo CR LF] --> O
+    N --> R[tx_busy]
+    N --> S[tx_ready]
+    R --> O
+    S --> O
+```
+## 7.3 Tabla de Verdad del Detector de Flanco btn_rise
+
+La señal btn_rise se define en el diseño como:
+btn_rise = btn_sync & ~btn_sync_d;
+Esta expresión detecta un flanco de subida del botón sincronizado.
+## Tabla de verdad de btn_rise
+| `btn_sync` | `btn_sync_d` | `btn_rise` |
+| ---------: | -----------: | ---------: |
+|          0 |            0 |          0 |
+|          0 |            1 |          0 |
+|          1 |            0 |          1 |
+|          1 |            1 |          0 |
+
+Interpretación
+
+btn_rise = 1 únicamente cuando el valor actual del botón sincronizado es 1 y el valor anterior era 0.
+Esto indica que el botón acaba de pasar de reposo a activación.
+
+## 7.4 Diagrama del Detector de Flanco
+```mermaid
+flowchart LR
+    A[btn_send] --> B[btn_meta]
+    B --> C[btn_sync]
+    C --> D[btn_sync_d]
+    C --> E[AND]
+    D --> F[NOT]
+    F --> E
+    E --> G[btn_rise]
+```
+
+## 7.5 Tabla de Operación del Registro de LEDs
+
+La lógica de los LEDs es:
+always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        leds <= 8'h00;
+    end else if (rx_valid) begin
+        leds <= rx_data;
+    end
+end
+
+Como se trata de lógica secuencial, lo correcto es documentarla con una tabla de operación.
+## Tabla de operación de leds
+| `rst_n` | `rx_valid` | Acción sobre `leds`               |
+| ------: | ---------: | --------------------------------- |
+|       0 |          X | `leds <= 8'h00`                   |
+|       1 |          0 | `leds` conserva su valor anterior |
+|       1 |          1 | `leds <= rx_data`                 |
+
+Interpretación
+
+Si el reset está activo, los LEDs se apagan.
+Si no hay reset y no llegó un dato válido, los LEDs mantienen el último valor almacenado.
+Si llega un byte válido, los LEDs muestran ese byte recibido.
+
+## 7.6 Diagrama de Actualización de LEDs
+```mermaid
+flowchart TD
+    A[posedge clk o negedge rst_n] --> B{rst_n = 0}
+    B -- Si --> C[leds = 8h00]
+    B -- No --> D{rx_valid = 1}
+    D -- Si --> E[leds = rx_data]
+    D -- No --> F[leds conserva valor]
+```
+## 7.7 Codificación de Estados de la FSM
+
+La máquina de estados del módulo usa los siguientes estados:
+
+typedef enum logic [1:0] {
+    S_IDLE,
+    S_SEND,
+    S_WAIT
+} send_state_t;
+## Tabla de codificación de estados
+| Estado   | Código binario |
+| -------- | -------------- |
+| `S_IDLE` | `2'b00`        |
+| `S_SEND` | `2'b01`        |
+| `S_WAIT` | `2'b10`        |
+El valor 2'b11 no se utiliza en la FSM actual.
+
+## 7.8 Tabla de Transición de Estados de la FSM
+
+La FSM controla el envío del mensaje "Hola mundo\r\n" a través de UART.
+## Tabla de transición
+| Estado actual | Condición                             | Estado siguiente | Acción                                     |
+| ------------- | ------------------------------------- | ---------------- | ------------------------------------------ |
+| `S_IDLE`      | `btn_rise = 0`                        | `S_IDLE`         | Espera botón                               |
+| `S_IDLE`      | `btn_rise = 1`                        | `S_SEND`         | `msg_idx <= 0`                             |
+| `S_SEND`      | `tx_ready = 0`                        | `S_SEND`         | Espera disponibilidad del transmisor       |
+| `S_SEND`      | `tx_ready = 1`                        | `S_WAIT`         | `tx_data <= MSG[msg_idx]`, `tx_start <= 1` |
+| `S_WAIT`      | `tx_busy = 1`                         | `S_WAIT`         | Espera fin de transmisión del byte actual  |
+| `S_WAIT`      | `tx_busy = 0` y `msg_idx < MSG_LEN-1` | `S_SEND`         | `msg_idx <= msg_idx + 1`                   |
+| `S_WAIT`      | `tx_busy = 0` y `msg_idx = MSG_LEN-1` | `S_IDLE`         | Finaliza el envío del mensaje              |
+
+## 7.9 Tabla de Salidas por Estado
+
+Esta tabla resume el comportamiento principal de la FSM en cada estado.
+| Estado   |               `tx_start` | `tx_data`            | `msg_idx`                                                 |
+| -------- | -----------------------: | -------------------- | --------------------------------------------------------- |
+| `S_IDLE` |                        0 | Sin cambio           | Se carga en 0 cuando se detecta `btn_rise`                |
+| `S_SEND` | 1 solo si `tx_ready = 1` | Carga `MSG[msg_idx]` | Se mantiene                                               |
+| `S_WAIT` |                        0 | Se mantiene          | Incrementa cuando termina el byte y aún faltan caracteres |
+
+## 7.10 Tabla Condicional de tx_start
+
+La señal tx_start se limpia al inicio de cada ciclo:
+
+tx_start <= 0;
+
+y solo se activa durante S_SEND cuando tx_ready = 1.
+## Tabla condicional de tx_start
+| Estado   | `tx_ready` | `tx_start` |
+| -------- | ---------: | ---------: |
+| `S_IDLE` |          X |          0 |
+| `S_SEND` |          0 |          0 |
+| `S_SEND` |          1 |          1 |
+| `S_WAIT` |          X |          0 |
+
+## 7.11 Tabla Condicional de Avance de msg_idx
+
+El índice del mensaje cambia únicamente en ciertas condiciones.
+| Estado   | `tx_busy` | `msg_idx = MSG_LEN-1` | Acción sobre `msg_idx`         |
+| -------- | --------: | --------------------: | ------------------------------ |
+| `S_IDLE` |         X |                     X | Se carga `0` si `btn_rise = 1` |
+| `S_SEND` |         X |                     X | Se mantiene                    |
+| `S_WAIT` |         1 |                     X | Se mantiene                    |
+| `S_WAIT` |         0 |                     0 | `msg_idx <= msg_idx + 1`       |
+| `S_WAIT` |         0 |                     1 | Se mantiene; termina el envío  |
+
+## 7.12 Tabla del Mensaje Transmitido
+
+El arreglo MSG contiene el texto que será enviado por UART cuando se presiona el botón.
+
+Tabla del contenido de MSG
+| Índice | Carácter | ASCII decimal | ASCII hexadecimal | ASCII binario |
+| -----: | -------- | ------------: | ----------------: | ------------- |
+|      0 | `H`      |            72 |           `8'h48` | `01001000`    |
+|      1 | `o`      |           111 |           `8'h6F` | `01101111`    |
+|      2 | `l`      |           108 |           `8'h6C` | `01101100`    |
+|      3 | `a`      |            97 |           `8'h61` | `01100001`    |
+|      4 | espacio  |            32 |           `8'h20` | `00100000`    |
+|      5 | `m`      |           109 |           `8'h6D` | `01101101`    |
+|      6 | `u`      |           117 |           `8'h75` | `01110101`    |
+|      7 | `n`      |           110 |           `8'h6E` | `01101110`    |
+|      8 | `d`      |           100 |           `8'h64` | `01100100`    |
+|      9 | `o`      |           111 |           `8'h6F` | `01101111`    |
+|     10 | `CR`     |            13 |           `8'h0D` | `00001101`    |
+|     11 | `LF`     |            10 |           `8'h0A` | `00001010`    |
+
+## 7.13 Tabla Resumen de Señales Importantes
+| Señal        | Tipo    | Función                                |
+| ------------ | ------- | -------------------------------------- |
+| `clk`        | entrada | reloj principal del sistema            |
+| `rst_n`      | entrada | reset activo en bajo                   |
+| `btn_send`   | entrada | botón físico para iniciar el envío     |
+| `uart_rx`    | entrada | línea serial de recepción              |
+| `uart_tx`    | salida  | línea serial de transmisión            |
+| `leds[7:0]`  | salida  | muestran el último byte recibido       |
+| `tick_16x`   | interna | tick de sobremuestreo UART             |
+| `rx_data`    | interna | byte recibido por UART RX              |
+| `rx_valid`   | interna | indica recepción válida                |
+| `rx_ferr`    | interna | error de trama                         |
+| `tx_data`    | interna | byte a transmitir                      |
+| `tx_start`   | interna | pulso de inicio de transmisión         |
+| `tx_busy`    | interna | transmisor ocupado                     |
+| `tx_ready`   | interna | transmisor listo                       |
+| `btn_meta`   | interna | primera etapa de sincronización        |
+| `btn_sync`   | interna | segunda etapa de sincronización        |
+| `btn_sync_d` | interna | valor anterior de `btn_sync`           |
+| `btn_rise`   | interna | detección de flanco de subida          |
+| `state`      | interna | estado actual de la FSM                |
+| `msg_idx`    | interna | índice del carácter actual del mensaje |
+
+Las tablas y diagramas presentados describen formalmente la lógica del módulo uart_top. En particular:
+La tabla de verdad de btn_rise documenta la detección de flanco de subida,
+La tabla de operación de leds muestra cómo se almacena el último byte recibido,
+La tabla de transición de estados explica el comportamiento de la FSM de transmisión,
+La tabla del mensaje MSG documenta el contenido exacto enviado por UART.
+
+## 8. Conclusiones
+## 8.1 Integración del Sistema
+
+El módulo uart_top permite integrar diferentes bloques funcionales del sistema UART en una sola arquitectura. A través de este módulo se conectan el generador de baud rate, el receptor UART, el transmisor UART, el sistema de detección de flanco del botón y la máquina de estados encargada de transmitir el mensaje. Esta integración permite que el sistema funcione como una unidad completa capaz de comunicarse con una computadora mediante comunicación serial.
+
+## 8.2 Uso de Arquitectura Modular
+
+El diseño se desarrolló siguiendo un enfoque modular, lo cual facilita la organización del sistema y permite dividir el diseño en bloques funcionales independientes. Este enfoque simplifica la comprensión del funcionamiento interno del sistema, permite reutilizar módulos en futuros proyectos y facilita el proceso de depuración durante el desarrollo.
+
+## 8.3 Importancia de la Máquina de Estados
+
+La máquina de estados implementada en el módulo permite controlar el proceso de transmisión del mensaje "Hola mundo\r\n" de forma ordenada. Gracias a la definición de estados (S_IDLE, S_SEND y S_WAIT), el sistema puede coordinar correctamente cuándo iniciar la transmisión, cuándo esperar la disponibilidad del transmisor y cuándo avanzar al siguiente carácter del mensaje.
+Este tipo de control es fundamental en sistemas digitales que requieren manejar procesos secuenciales.
+
+## 8.4 Uso del Detector de Flanco del Botón
+
+La implementación del detector de flanco permite detectar correctamente el momento en que el botón es presionado. Mediante la sincronización en dos flip-flops y la lógica btn_rise, el sistema puede identificar un evento de activación sin problemas de metastabilidad, lo cual es una práctica recomendada en sistemas digitales que interactúan con señales externas.
+
+## 8.5 Visualización de Datos Recibidos
+
+El sistema permite mostrar en los LEDs el último byte recibido por el receptor UART. Esto facilita la verificación del funcionamiento del sistema y permite observar directamente los datos recibidos desde la computadora. Esta característica resulta útil durante la etapa de prueba y depuración del sistema.
+
+## 8.6 Importancia de las Tablas de Verdad y Diagramas
+
+Las tablas de verdad, tablas de transición de estados y diagramas incluidos en la documentación permiten describir formalmente el comportamiento del sistema. Estas herramientas ayudan a comprender cómo responden las diferentes señales del sistema ante distintas condiciones de entrada y facilitan el análisis del diseño.
+Además, el uso de diagramas Mermaid en la documentación permite representar visualmente la arquitectura y el funcionamiento del sistema de una manera clara y estructurada.
+
+## 8.7 Verificación del Funcionamiento del Sistema
+
+Mediante la simulación y el análisis del comportamiento de las señales, se puede verificar que el sistema cumple con las especificaciones del diseño. El sistema responde correctamente al presionar el botón, transmite el mensaje definido y muestra en los LEDs los datos recibidos por la interfaz UART.
+Esto confirma que la lógica implementada en el módulo uart_top funciona de acuerdo con lo esperado.
+
+## 8.8 Conclusión General
+
+En conclusión, el módulo uart_top demuestra la correcta aplicación de conceptos fundamentales del diseño de sistemas digitales, tales como arquitectura modular, máquinas de estados finitos, sincronización de señales externas y comunicación serial UART. La integración de estos elementos permite construir un sistema funcional capaz de interactuar con dispositivos externos y transmitir información de forma confiable.
+La documentación presentada, junto con las tablas de verdad, diagramas y descripción de módulos, permite comprender con claridad el funcionamiento del sistema y proporciona una base sólida para futuras mejoras o ampliaciones del diseño.
