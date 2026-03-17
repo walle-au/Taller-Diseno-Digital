@@ -1,70 +1,48 @@
-## Tabla Funcional del PWM
+# Tablas – Ejercicio 3: PWM de 4 bits
 
-El módulo PWM funciona según las siguientes relaciones generales:
-
-- `PERIOD_CYCLES = 100000`
-- `threshold = floor(duty_code × PERIOD_CYCLES / 15)`
-- `pwm_out = 1 si counter < threshold`
-- `pwm_out = 0 si counter ≥ threshold`
-
-### Relación general duty_code → threshold
-
-| duty_code | threshold (ciclos) | Duty (%) |
-|------------|--------------------|-----------|
-| 0 | 0 | 0% |
-| 1 – 14 | ⌊(duty_code × 100000) / 15⌋ | (threshold / 100000) × 100 |
-| 15 | 100000 | 100% |
+El módulo divide el período de 1 ms en 16 subperíodos iguales de 6,250 ciclos
+mediante dos contadores anidados. La salida `pwm_out = 1` cuando `level_counter < duty`.
 
 ---
 
-## Tabla de Niveles PWM (PERIOD_CYCLES = 100000)
-
-Para un reloj de 100 MHz (10 ns por ciclo):
-
-- Período total = 1 ms = 1000 µs
-- `Ton (µs) = threshold × 0.01`
-
-| duty_code | threshold (ciclos) | Ton (µs) | Duty (%) |
-|------------|--------------------|----------|-----------|
-| 0  | 0       | 0.00    | 0.000 |
-| 1  | 6666    | 66.66   | 6.666 |
-| 2  | 13333   | 133.33  | 13.333 |
-| 3  | 20000   | 200.00  | 20.000 |
-| 4  | 26666   | 266.66  | 26.666 |
-| 5  | 33333   | 333.33  | 33.333 |
-| 6  | 40000   | 400.00  | 40.000 |
-| 7  | 46666   | 466.66  | 46.666 |
-| 8  | 53333   | 533.33  | 53.333 |
-| 9  | 60000   | 600.00  | 60.000 |
-| 10 | 66666   | 666.66  | 66.666 |
-| 11 | 73333   | 733.33  | 73.333 |
-| 12 | 80000   | 800.00  | 80.000 |
-| 13 | 86666   | 866.66  | 86.666 |
-| 14 | 93333   | 933.33  | 93.333 |
-| 15 | 100000  | 1000.00 | 100.000 |
-
-> Nota: `Toff = 1000 µs − Ton`
+## Tabla de comportamiento del contador
+| rst | Condición | counter |
+|-----|-----------|---------|
+| 1 | flanco positivo | 0 (reset) |
+| 0 | counter < 6249 | counter + 1 |
+| 0 | counter = 6249 | 0 (y level_counter + 1) |
 
 ---
 
-## Tabla de Verdad Funcional del Comparador PWM
-
-La salida PWM depende del valor del contador y del threshold:
-
+## Tabla de verdad del comparador
 | Condición | pwm_out |
-|------------|----------|
-| threshold = 0 | 0 |
-| 0 < threshold < 100000 y counter < threshold | 1 |
-| 0 < threshold < 100000 y counter ≥ threshold | 0 |
-| threshold = 100000 | 1 |
+|-----------|---------|
+| duty = 0 | 0 (siempre apagado) |
+| level_counter < duty | 1 |
+| level_counter ≥ duty | 0 |
 
 ---
 
-## Tabla de Comportamiento del Contador
+## Tabla de niveles PWM
+Período total = 1 ms — Ciclos por nivel = 6,250
 
-| rst | Evento de reloj | counter |
-|------|----------------|----------|
-| 1 | flanco positivo | 0 |
-| 0 | flanco positivo | counter + 1 |
-| counter = 99999 | siguiente flanco | 0 |
+| duty_code | Ciclos HIGH | Ton (µs) | Duty (%) |
+|-----------|-------------|----------|----------|
+| 0  | 0      | 0.00   | 0.00  |
+| 1  | 6,250  | 62.50  | 6.25  |
+| 2  | 12,500 | 125.00 | 12.50 |
+| 3  | 18,750 | 187.50 | 18.75 |
+| 4  | 25,000 | 250.00 | 25.00 |
+| 5  | 31,250 | 312.50 | 31.25 |
+| 6  | 37,500 | 375.00 | 37.50 |
+| 7  | 43,750 | 437.50 | 43.75 |
+| 8  | 50,000 | 500.00 | 50.00 |
+| 9  | 56,250 | 562.50 | 56.25 |
+| 10 | 62,500 | 625.00 | 62.50 |
+| 11 | 68,750 | 687.50 | 68.75 |
+| 12 | 75,000 | 750.00 | 75.00 |
+| 13 | 81,250 | 812.50 | 81.25 |
+| 14 | 87,500 | 875.00 | 87.50 |
+| 15 | 93,750 | 937.50 | 93.75 |
 
+> El duty máximo es 93.75% ya que con 4 bits se alcanzan 15 de 16 niveles activos.
