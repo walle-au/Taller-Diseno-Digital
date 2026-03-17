@@ -1,54 +1,58 @@
 # Ejercicio 3 – Modulación por Ancho de Pulso (PWM)
 
 ## Descripción
-
-Este ejercicio consiste en diseñar un módulo digital secuencial que reciba como entrada un código de 4 bits proveniente de interruptores físicos de la FPGA y genere como salida una señal PWM (Modulación por Ancho de Pulso) con un período aproximado de 1 ms, la cual se conectará a un LED para observar variaciones en el brillo según el ciclo de trabajo seleccionado.
-
----
-
-## Objetivo
-
-Implementar un bloque completamente sintetizable que:
-
-- Reciba un bus de 4 bits desde los switches.
-- Genere una señal PWM proporcional al valor ingresado.
-- Mantenga un período fijo de aproximadamente 1 ms.
-- No genere latches.
-- Sea validado mediante testbench.
+Módulo digital secuencial que recibe un código de 4 bits desde interruptores físicos
+y genera una señal PWM con período de 1 ms, conectada a un LED para observar
+variaciones de brillo según el ciclo de trabajo seleccionado.
 
 ---
 
 ## Especificaciones técnicas
-
-- **Entrada:** `sw[3:0]`
-- **Salida:** `pwm_out`
-- **Frecuencia del reloj:** 100 MHz
-- **Frecuencia PWM:** ~1 kHz
-- **Resolución:** 16 niveles de duty cycle (4 bits)
-- **Operación:**
-  - Cálculo de `threshold = (duty_code × PERIOD_CYCLES) / 15`
-  - Generación de señal PWM mediante comparación:
-
-    `pwm_out = 1 si counter < threshold`
+| Parámetro | Valor |
+|---|---|
+| Entrada | `sw[3:0]` (4 interruptores) |
+| Salida | `pwm_out` → LED0 |
+| Frecuencia de reloj | 100 MHz |
+| Período PWM | 1 ms (~1 kHz) |
+| Resolución | 16 niveles (4 bits) |
+| Ciclos por período | 100,000 |
+| Ciclos por nivel | 6,250 |
 
 ---
 
-## Tipo de diseño
-
-- Lógica secuencial (contador síncrono).
-- Lógica combinacional (cálculo de threshold y comparador).
-- Descripción en SystemVerilog.
-- Diseño sintetizable para FPGA.
+## Archivos
+```
+src/
+├── pwm_4bit.sv   # Módulo principal PWM
+├── top.sv        # Módulo superior (mapeo de pines)
+└── nexys4.xdc    # Constraints de la tarjeta
+tb/
+└── tb_pwm_4bit.sv  # Testbench exhaustivo
+docs/
+└── (screenshots, tablas, paper)
+```
 
 ---
 
-## Validación
+## Resultados del testbench
 
-Se desarrolló un testbench que:
+Se validaron 5 pruebas independientes sobre todos los valores posibles de entrada:
 
-- Genera reloj de 100 MHz.
-- Aplica diferentes valores de `duty_code`.
-- Permite observar la forma de onda PWM.
-- Verifica que el período y el duty cycle correspondan al valor esperado.
+| Test | Descripción | Resultado |
+|---|---|---|
+| 1 | Reset asíncrono | ✅ PASS |
+| 2 | Barrido completo duty 0–15 | ✅ 16/16 PASS |
+| 3a | Caso límite duty=0 (siempre LOW) | ✅ PASS |
+| 3b | Caso límite duty=15 (93,750/100,000) | ✅ PASS |
+| 4 | Cambio dinámico 4→12 sin reset | ✅ PASS |
+| 5 | Período medido = 1,000,000 ns | ✅ PASS |
 
-Además, se realizó validación en hardware conectando la salida PWM a un LED para observar variaciones de brillo.
+![Resultados barrido 0-15](docs/sim_resultados.png)
+![Testbench completado](docs/sim_completo.png)
+
+---
+
+## Validación en hardware
+El diseño fue sintetizado sobre la Nexys 4 DDR (Artix-7). Al variar los
+interruptores de `0000` a `1111` se observaron 16 niveles de brillo distintos
+en el LED, confirmando el correcto funcionamiento en hardware.
