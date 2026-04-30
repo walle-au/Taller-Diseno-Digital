@@ -5,7 +5,7 @@
 **Profesor:** Kaled Alfaro Badilla, M.Sc.
 **Autores:** Walter-Allan-Alexander-Esteban
 **Tarjeta FPGA:** Digilent Nexys4 DDR (Artix-7 XC7A100T-1CSG324C)
-**Herramientas:** Xilinx Vivado 2023.2, SystemVerilog, Python 3
+**Herramientas:** Xilinx Vivado 2024.1, SystemVerilog, Python 3
 
 ---
 
@@ -57,70 +57,7 @@ docs/           Informe técnico, diagramas, figuras
 tests/          Casos de prueba para software
 ```
 
-## 4. Cómo reproducir el proyecto
-
-### 4.1 Requisitos
-- Vivado 2023.2 o superior
-- Python 3.9+ (para el ensamblador `rv32i_asm.py`)
-- Tarjeta Nexys4 DDR conectada por USB
-
-### 4.2 Generar el binario del programa
-
-```bash
-cd sw/
-python3 tools/rv32i_asm.py asm/calculator.s -o build/main.coe
-```
-
-### 4.3 Crear el proyecto Vivado desde cero
-
-```bash
-cd scripts/
-vivado -mode batch -source create_project.tcl
-```
-
-El script genera `build/lab2.xpr`, instancia los IP cores (`clk_wiz_main`,
-`rom_program`, `data_ram`) y agrega todos los fuentes RTL y constraints.
-
-### 4.4 Sintetizar, implementar y programar
-
-```bash
-vivado -mode batch -source scripts/build.tcl
-vivado -mode batch -source scripts/program_fpga.tcl
-```
-
-### 4.5 Uso
-
-Abrir un terminal serial (p. ej. `picocom /dev/ttyUSB1 -b 9600`) y enviar:
-
-```
-1234+5678<ENTER>
-```
-
-El sistema hará eco de los caracteres y responderá con el resultado.
-
-## 5. Verificación
-
-Cada módulo tiene un testbench auto-verificable en `sim/`. Para correrlos:
-
-```bash
-cd sim/
-vivado -mode batch -source run_all_tests.tcl
-```
-
-Resultados esperados: todos los `assert`/`$display` deben reportar `PASS`.
-
-## 6. Resultados de implementación
-
-| Métrica           | Valor        |
-|-------------------|--------------|
-| Frecuencia        | 50 MHz       |
-| Slack WNS         | [llenar]     |
-| LUTs usadas       | [llenar]     |
-| FFs usados        | [llenar]     |
-| BRAMs usadas      | [llenar]     |
-| Potencia total    | [llenar]     |
-
-## 7. Créditos y licencia
+## 4. Créditos y licencia
 
 - **PicoRV32** por Claire Xenia Wolf (YosysHQ). Licencia ISC.
   Repositorio: https://github.com/YosysHQ/picorv32
@@ -128,7 +65,7 @@ Resultados esperados: todos los `assert`/`$display` deben reportar `PASS`.
   (ver `LICENSE`).
 - Asistencia de IA en el desarrollo: ver `AI_USAGE.md`.
 
-## 8. Referencias
+## 5. Referencias
 
 1. Patterson & Hennessy. *Computer Organization and Design RISC-V Edition*. Morgan Kaufmann, 2017.
 2. ARM. *AMBA AXI and ACE Protocol Specification*. IHI 0022H, 2021.
