@@ -4,7 +4,7 @@
 # =============================================================================
 
 # --- Proyecto Vivado (se regenera con scripts/create_project.tcl) ------------
-build/
+# build/
 *.xpr
 *.xpr.lock
 *.cache/
@@ -49,18 +49,21 @@ xsim.dir/
 *.shm/
 
 # --- Software: objetos y binarios generados ----------------------------------
+# (NO ignoramos toda la carpeta sw/build/ porque ahi vive main.coe versionado)
 sw/build/*.o
 sw/build/*.elf
 sw/build/*.map
-# NO ignorar main.coe (se versiona para reproducibilidad):
+sw/build/*.hex
+sw/build/*.lst
+sw/build/*.dump
+# Mantener bin2coe.py y main.coe en el repo:
 !sw/build/main.coe
-
+!sw/build/bin2coe.py
 # --- Python cache ------------------------------------------------------------
 __pycache__/
 *.pyc
 *.pyo
-.pytest_cache/
-*.egg-info/
+.pytest_cache/*.egg-info/
 
 # --- Editores e IDEs ---------------------------------------------------------
 .vscode/

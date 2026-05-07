@@ -12,6 +12,7 @@ set -e
 ASM_SRC="sw/asm/calc.s"
 LD_SCRIPT="sw/ld/link.ld"
 BUILD_DIR="sw/build"
+TOOLS_DIR="sw/tools"
 OBJ="$BUILD_DIR/calc.o"
 ELF="$BUILD_DIR/calc.elf"
 BIN="$BUILD_DIR/calc.bin"
@@ -30,7 +31,7 @@ echo ">>> 3/4 Extrayendo binario plano ..."
 $TOOL-objcopy -O binary "$ELF" "$BIN"
 
 echo ">>> 4/4 Convirtiendo a .coe ..."
-python3 "$BUILD_DIR/bin2coe.py" "$BIN" "$COE"
+python3 "$TOOLS_DIR/bin2coe.py" "$BIN" "$COE"
 
 echo ""
 echo "Listo. Archivos generados:"
