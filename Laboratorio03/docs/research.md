@@ -38,22 +38,25 @@ divider). Default 8 (=6.25 MHz), modificable por software para depurar.
 - **Tamaño de palabra**: 8 bits.
 - **Orden**: MSB-first.
 
-### 1.4 Pinout en la Nexys4 DDR (PMOD JA)
+### 1.4 Pinout en la Nexys4 DDR (ADXL362 onboard)
 
-Conexión sugerida del ADXL362 al header **PMOD JA**:
+El **ADXL362 viene montado de fábrica en la Nexys4 DDR** — la conexión al
+FPGA es interna a la PCB de la tarjeta y está fijada por hardware.
+No requiere PMOD externo ni cableado adicional.
 
-| Señal | PMOD JA pin | FPGA pin (Nexys4) |
+Pines según el *Nexys 4 DDR Master XDC* oficial de Digilent:
+
+| Señal       | Pin FPGA | Notas |
 |---|---|---|
-| `spi_csn`  | JA1 | C17 |
-| `spi_mosi` | JA2 | D18 |
-| `spi_miso` | JA3 | E18 |
-| `spi_sclk` | JA4 | G17 |
-| `VCC` (3.3V) | JA6 | — |
-| `GND`     | JA5 | — |
+| `ACL_CSN`   | **D15** | Chip select activo bajo |
+| `ACL_MOSI`  | **F14** | Master Out / Slave In |
+| `ACL_MISO`  | **E15** | Master In / Slave Out |
+| `ACL_SCLK`  | **F15** | SPI clock |
+| `ACL_INT1`  | B13     | Interrupt 1 (no se usa en este lab) |
+| `ACL_INT2`  | C16     | Interrupt 2 (no se usa en este lab) |
 
-> Pines tomados del Nexys4 DDR Master XDC (referencia 3 del README).
-> Verificar antes de soldar: la tarjeta Digilent PMOD ACL2 ya trae el ADXL362
-> con este pinout exacto si la usamos.
+Estándar I/O: `LVCMOS33`. Estos seis pines deben descomentarse en
+`constraints/nexys4ddr.xdc` durante la Etapa 3.
 
 ---
 
