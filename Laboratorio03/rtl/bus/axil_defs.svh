@@ -48,6 +48,7 @@ localparam logic [1:0] AXI_RESP_DECERR = 2'b11;
 //   0x02000    0x02003      4 B       GPIO Switches/Botones (RO)
 //   0x02004    0x02007      4 B       GPIO LEDs (RW)
 //   0x02010    0x0201F      16 B      UART (3 registros mapeados)
+//   0x02020    0x0202F      16 B      SPI master ADXL362 (3 registros)
 //   0x40000    0x7FFFF      256 KiB   RAM (datos, stack y heap)
 //
 // Para cada slave se define una BASE y una MASK. Un slave se selecciona
@@ -71,6 +72,10 @@ localparam logic [AXIL_ADDR_WIDTH-1:0] GPIO_LED_MASK = 20'hFFFFC;
 // ---- UART: 0x02010 - 0x0201F (16 bytes, cubre CTRL/TX/RX) -------------------
 localparam logic [AXIL_ADDR_WIDTH-1:0] UART_BASE = 20'h02010;
 localparam logic [AXIL_ADDR_WIDTH-1:0] UART_MASK = 20'hFFFF0;
+
+// ---- SPI master ADXL362: 0x02020 - 0x0202F (16 bytes, CTRL/TX/RX) -----------
+localparam logic [AXIL_ADDR_WIDTH-1:0] SPI_BASE = 20'h02020;
+localparam logic [AXIL_ADDR_WIDTH-1:0] SPI_MASK = 20'hFFFF0;
 
 // ---- RAM: 0x40000 - 0x7FFFF (256 KiB) ---------------------------------------
 //   La mascara 0xC0000 matchea bits [19:18] == 2'b01:
@@ -100,7 +105,7 @@ localparam int UART_CTRL_BIT_NEW_RX = 1;          // 1 = hay byte nuevo en RX; s
 // -----------------------------------------------------------------------------
 // Numero de slaves (usado por el interconnect para dimensionar arrays)
 // -----------------------------------------------------------------------------
-localparam int unsigned NUM_SLAVES = 5;
+localparam int unsigned NUM_SLAVES = 6;
 
 // Indices de cada slave en los arrays del interconnect
 localparam int SLAVE_IDX_ROM      = 0;
@@ -108,5 +113,6 @@ localparam int SLAVE_IDX_RAM      = 1;
 localparam int SLAVE_IDX_GPIO_SW  = 2;
 localparam int SLAVE_IDX_GPIO_LED = 3;
 localparam int SLAVE_IDX_UART     = 4;
+localparam int SLAVE_IDX_SPI      = 5;
 
 `endif // AXIL_DEFS_SVH

@@ -3,8 +3,9 @@
 // Autor        : WallyCR
 // Fecha        : 20 de abril de 2026
 // Curso        : EL3313 - Taller de Diseño Digital (TEC, VII semestre)
-// Descripción  : Interconnect AXI4-Lite con 1 master entrante y 5 slaves
-//                salientes para el SoC RISC-V del Laboratorio 2.
+// Descripción  : Interconnect AXI4-Lite con 1 master entrante y 6 slaves
+//                salientes para el SoC RISC-V (ROM, RAM, GPIO_SW, GPIO_LED,
+//                UART, SPI ADXL362) — base Lab 2 ampliada en Lab 3.
 //
 //                Funcionalidad:
 //                  - Decodificación combinacional de direcciones según las
@@ -111,6 +112,7 @@ module axil_interconnect (
         else if ((s_axi_awaddr & GPIO_SW_MASK)  == GPIO_SW_BASE)  aw_sel_oh[SLAVE_IDX_GPIO_SW]  = 1'b1;
         else if ((s_axi_awaddr & GPIO_LED_MASK) == GPIO_LED_BASE) aw_sel_oh[SLAVE_IDX_GPIO_LED] = 1'b1;
         else if ((s_axi_awaddr & UART_MASK)     == UART_BASE)     aw_sel_oh[SLAVE_IDX_UART]     = 1'b1;
+        else if ((s_axi_awaddr & SPI_MASK)      == SPI_BASE)      aw_sel_oh[SLAVE_IDX_SPI]      = 1'b1;
         aw_decode_valid = |aw_sel_oh;
     end
 
@@ -121,6 +123,7 @@ module axil_interconnect (
         else if ((s_axi_araddr & GPIO_SW_MASK)  == GPIO_SW_BASE)  ar_sel_oh[SLAVE_IDX_GPIO_SW]  = 1'b1;
         else if ((s_axi_araddr & GPIO_LED_MASK) == GPIO_LED_BASE) ar_sel_oh[SLAVE_IDX_GPIO_LED] = 1'b1;
         else if ((s_axi_araddr & UART_MASK)     == UART_BASE)     ar_sel_oh[SLAVE_IDX_UART]     = 1'b1;
+        else if ((s_axi_araddr & SPI_MASK)      == SPI_BASE)      ar_sel_oh[SLAVE_IDX_SPI]      = 1'b1;
         ar_decode_valid = |ar_sel_oh;
     end
 

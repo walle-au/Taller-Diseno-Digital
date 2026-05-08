@@ -1,34 +1,29 @@
 ## ============================================================================
-## Archivo      : scripts/create_project.tcl  (VERSION FIXED)
-## Proposito    : Crear el proyecto Vivado lab02_clean desde cero,
-##                idempotente, con verificacion previa de que todos los
-##                archivos existen.
+## scripts/create_project.tcl  – LAB 3
+## Crea el proyecto Vivado lab03 desde cero con:
+##   - RTL completo (SPI master + wrapper AXI-Lite incluidos)
+##   - Testbenches en fileset sim_1 (top por defecto: tb_spi_master)
+##   - IPs: clk_wiz_main, rom_program, data_ram
+##   - Constraints Nexys4 DDR
 ##
-## CAMBIOS vs version original:
-##   1. Validacion previa: aborta con mensaje claro si falta un .sv o .svh.
-##   2. set_msg_config para silenciar el warning falso de width mismatch
-##      DESPUES de regenerar las IPs (si todavia aparece, hay un problema
-##      real, no cacheado).
-##   3. Limpieza de directorios .ip cacheados antes de empezar.
-##   4. NO sourcea los .tcl de los IPs viejos: usa los _fixed.
-##
-## Uso (desde la raiz del repo Laboratorio02):
-##   vivado -mode tcl
-##   source scripts/create_project.tcl
+## Uso (desde la raiz del repo Laboratorio03):
+##   vivado -mode batch -source scripts/create_project.tcl
+## Luego abrir GUI:
+##   vivado /home/wally/Documentos/Vivado/2024.1/lab03/lab03.xpr &
 ## ============================================================================
 
 set repo_dir [pwd]
-set proj_name "lab02_clean"
-set proj_dir "/home/wally/Documentos/Vivado/2024.1/$proj_name"
-set part "xc7a100tcsg324-1"
+set proj_name "lab03"
+set proj_dir  "/home/wally/Documentos/Vivado/2024.1/$proj_name"
+set part      "xc7a100tcsg324-1"
 
 puts "==========================================="
-puts "Creando proyecto Vivado Lab 2 (FIXED)"
+puts "Creando proyecto Vivado Lab 3"
 puts "  Repo: $repo_dir"
 puts "  Proy: $proj_dir"
 puts "==========================================="
 
-## --- 0. Validacion previa de archivos -----------------------------------
+## --- 0. Validacion de archivos ----------------------------------------------
 set required_files [list \
     "rtl/bus/axil_defs.svh" \
     "rtl/bus/axil_interconnect.sv" \
@@ -37,6 +32,8 @@ set required_files [list \
     "rtl/memory/ram_axil_with_ip.sv" \
     "rtl/peripherals/gpio_leds_axil.sv" \
     "rtl/peripherals/gpio_sw_btn_axil.sv" \
+    "rtl/peripherals/spi/spi_master.sv" \
+    "rtl/peripherals/spi/spi_axil.sv" \
     "rtl/peripherals/uart/uart_axil.sv" \
     "rtl/peripherals/uart/uart_baud_gen.sv" \
     "rtl/peripherals/uart/uart_tx.sv" \
@@ -49,7 +46,13 @@ set required_files [list \
     "ip/clk_wiz_main.tcl" \
     "ip/rom_program.tcl" \
     "ip/data_ram.tcl" \
+    "sim/tb_spi_master.sv" \
+    "sim/tb_spi_axil.sv" \
+    "sim/common/adxl362_stub.sv" \
+    "sim/common/axil_master_bfm.sv" \
 ]
+
+
 
 set missing 0
 foreach f $required_files {
@@ -63,21 +66,21 @@ if {$missing > 0} {
 }
 puts "OK: todos los archivos requeridos presentes."
 
-## --- 1. Cerrar y borrar proyecto previo --------------------------------
+## --- 1. Cerrar y borrar proyecto previo ------------------------------------
 catch {close_project}
 if {[file exists $proj_dir]} {
     puts "INFO: borrando proyecto previo $proj_dir"
     file delete -force $proj_dir
 }
 
-## --- 2. Crear proyecto -------------------------------------------------
+## --- 2. Crear proyecto ------------------------------------------------------
 create_project $proj_name $proj_dir -part $part -force
 set_property target_language Verilog [current_project]
 set_property simulator_language Mixed [current_project]
 set_property default_lib xil_defaultlib [current_project]
 
-## --- 3. Sources de diseno (sin los rom_axil/ram_axil sin IP que no se usan) ---
-puts "\n[1/6] Agregando sources..."
+## --- 3. RTL de diseno -------------------------------------------------------
+puts "\n\[1/5\] Agregando RTL..."
 
 set design_files [list \
     "$repo_dir/rtl/bus/axil_defs.svh" \
@@ -87,6 +90,8 @@ set design_files [list \
     "$repo_dir/rtl/memory/ram_axil_with_ip.sv" \
     "$repo_dir/rtl/peripherals/gpio_leds_axil.sv" \
     "$repo_dir/rtl/peripherals/gpio_sw_btn_axil.sv" \
+    "$repo_dir/rtl/peripherals/spi/spi_master.sv" \
+    "$repo_dir/rtl/peripherals/spi/spi_axil.sv" \
     "$repo_dir/rtl/peripherals/uart/uart_axil.sv" \
     "$repo_dir/rtl/peripherals/uart/uart_baud_gen.sv" \
     "$repo_dir/rtl/peripherals/uart/uart_tx.sv" \
@@ -110,34 +115,58 @@ foreach f [get_files *.svh -of_objects [get_filesets sources_1]] {
 set_property include_dirs "$repo_dir/rtl/bus" [get_filesets sources_1]
 set_property top top [get_filesets sources_1]
 
-puts "      [llength $design_files] archivos agregados"
+puts "      [llength $design_files] archivos RTL agregados"
 
-## --- 4. Constraints ----------------------------------------------------
-puts "\n[2/6] Agregando constraints..."
+## --- 4. Constraints ---------------------------------------------------------
+puts "\n\[2/5\] Agregando constraints..."
 add_files -fileset constrs_1 -norecurse "$repo_dir/constraints/nexys4ddr.xdc"
 
-## --- 5. IPs (PLL + ROM + RAM) ------------------------------------------
-puts "\n[3/6] Creando IPs..."
+## --- 5. IPs (PLL + ROM + RAM) -----------------------------------------------
+puts "\n\[3/5\] Creando IPs..."
 source "$repo_dir/ip/clk_wiz_main.tcl"
 source "$repo_dir/ip/rom_program.tcl"
 source "$repo_dir/ip/data_ram.tcl"
 
-## --- 6. Update compile order y reporte ---------------------------------
-puts "\n[4/6] Actualizando compile order..."
+## --- 6. Fileset de simulacion -----------------------------------------------
+puts "\n\[4/5\] Configurando sim_1..."
+
+set sim_files [list \
+    "$repo_dir/sim/common/adxl362_stub.sv" \
+    "$repo_dir/sim/common/axil_master_bfm.sv" \
+    "$repo_dir/sim/tb_spi_master.sv" \
+    "$repo_dir/sim/tb_spi_axil.sv" \
+]
+
+add_files -norecurse -fileset sim_1 $sim_files
+
+foreach f [get_files *.sv -of_objects [get_filesets sim_1]] {
+    set_property file_type SystemVerilog $f
+}
+
+# axil_defs.svh como global include en sim_1 (igual que en sources_1)
+add_files -norecurse -fileset sim_1 "$repo_dir/rtl/bus/axil_defs.svh"
+set_property file_type "Verilog Header" [get_files -of_objects [get_filesets sim_1] {axil_defs.svh}]
+set_property is_global_include true     [get_files -of_objects [get_filesets sim_1] {axil_defs.svh}]
+
+set_property include_dirs "$repo_dir/rtl/bus" [get_filesets sim_1]
+set_property top tb_spi_master [get_filesets sim_1]
+set_property top_lib xil_defaultlib [get_filesets sim_1]
+
+puts "      [llength $sim_files] archivos de simulacion agregados"
+puts "      Top de simulacion por defecto: tb_spi_master"
+
+## --- 7. Compile order -------------------------------------------------------
+puts "\n\[5/5\] Actualizando compile order..."
 update_compile_order -fileset sources_1
+update_compile_order -fileset sim_1
 
-puts "\n[5/6] Verificando que las IPs no tengan width mismatch..."
-## Si despues de regenerar SIGUE habiendo width mismatch, escalamos a error.
-## Para esto sintetizamos out-of-context y leemos el log.
-## (Se puede comentar si se desea continuar pese al mismatch.)
-
-puts "\n[6/6] Listo. Siguientes pasos:"
-puts "==========================================="
-puts "  1. launch_runs synth_1 -jobs 4"
-puts "     wait_on_run synth_1"
-puts "  2. Revisar el log: NO debe haber 'width () does not match'."
-puts "  3. launch_runs impl_1 -to_step write_bitstream -jobs 4"
-puts "     wait_on_run impl_1"
-puts "  4. open_hw_manager ; connect_hw_server ; open_hw_target"
-puts "     program_hw_devices -file <bit>"
+puts "\n==========================================="
+puts "Proyecto lab03 listo."
+puts ""
+puts "Para abrir en GUI:"
+puts "  vivado $proj_dir/$proj_name.xpr &"
+puts ""
+puts "Testbenches disponibles (cambiar top en sim_1):"
+puts "  tb_spi_master       <- top por defecto"
+puts "  tb_spi_axil"
 puts "==========================================="

@@ -81,6 +81,16 @@ set_property -dict {PACKAGE_PIN D4   IOSTANDARD LVCMOS33} [get_ports uart_txd_o]
 set_property -dict {PACKAGE_PIN C4   IOSTANDARD LVCMOS33} [get_ports uart_rxd_i]
 
 ## ----------------------------------------------------------------------------
+## ADXL362 onboard (acelerómetro 3-ejes, conectado por SPI a la PCB)
+## Pines fijos por el master XDC oficial de Digilent (Nexys4 DDR).
+## ACL_INT1/INT2 no se usan en este lab.
+## ----------------------------------------------------------------------------
+set_property -dict {PACKAGE_PIN D15  IOSTANDARD LVCMOS33} [get_ports acl_csn_o]
+set_property -dict {PACKAGE_PIN F14  IOSTANDARD LVCMOS33} [get_ports acl_mosi_o]
+set_property -dict {PACKAGE_PIN E15  IOSTANDARD LVCMOS33} [get_ports acl_miso_i]
+set_property -dict {PACKAGE_PIN F15  IOSTANDARD LVCMOS33} [get_ports acl_sclk_o]
+
+## ----------------------------------------------------------------------------
 ## Configuración del bitstream
 ## ----------------------------------------------------------------------------
 set_property CONFIG_VOLTAGE 3.3 [current_design]

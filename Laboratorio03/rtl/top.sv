@@ -8,12 +8,13 @@
 //                  - PLL clk_wiz_main (100 MHz -> 50 MHz)
 //                  - reset_sync para deasserción síncrona
 //                  - picorv32_axi (variante AXI4-Lite del core RV32I)
-//                  - axil_interconnect (1 master, 5 slaves)
+//                  - axil_interconnect (1 master, 6 slaves)
 //                  - rom_axil + IP rom_program (programa)
 //                  - ram_axil + IP data_ram (datos)
 //                  - gpio_leds_axil (LEDs 0..11)
 //                  - gpio_sw_btn_axil (switches + 4 botones, sin BTNC)
 //                  - uart_axil (9600 8N1)
+//                  - spi_axil para el ADXL362 onboard (Lab 3)
 //
 //                LEDs físicos:
 //                  LED[11:0]  -> controlados por el programa via gpio_leds
@@ -39,6 +40,12 @@ module top (
 
     input  logic        uart_rxd_i,     // C4 - UART RX (desde el puente USB-UART)
     output logic        uart_txd_o,     // D4 - UART TX (hacia el puente USB-UART)
+
+    // ADXL362 onboard (SPI Mode 0). Pinout fijo de la Nexys4 DDR.
+    output logic        acl_csn_o,      // D15 - ACL_CSN (chip select activo bajo)
+    output logic        acl_mosi_o,     // F14 - ACL_MOSI
+    input  logic        acl_miso_i,     // E15 - ACL_MISO
+    output logic        acl_sclk_o,     // F15 - ACL_SCLK
 
     output logic [15:0] leds_o
 );
@@ -326,6 +333,35 @@ module top (
         .s_axi_rready  (s_rready [SLAVE_IDX_UART]),
         .uart_rx_i     (uart_rxd_i),
         .uart_tx_o     (uart_txd_o)
+    );
+
+    // -------------------------------------------------------------------------
+    // SPI master para el ADXL362 onboard (Lab 3)
+    // -------------------------------------------------------------------------
+    spi_axil u_spi (
+        .s_axi_aclk    (clk_50mhz),
+        .s_axi_aresetn (rst_n),
+        .s_axi_awaddr  (s_awaddr [SLAVE_IDX_SPI]),
+        .s_axi_awvalid (s_awvalid[SLAVE_IDX_SPI]),
+        .s_axi_awready (s_awready[SLAVE_IDX_SPI]),
+        .s_axi_wdata   (s_wdata  [SLAVE_IDX_SPI]),
+        .s_axi_wstrb   (s_wstrb  [SLAVE_IDX_SPI]),
+        .s_axi_wvalid  (s_wvalid [SLAVE_IDX_SPI]),
+        .s_axi_wready  (s_wready [SLAVE_IDX_SPI]),
+        .s_axi_bresp   (s_bresp  [SLAVE_IDX_SPI]),
+        .s_axi_bvalid  (s_bvalid [SLAVE_IDX_SPI]),
+        .s_axi_bready  (s_bready [SLAVE_IDX_SPI]),
+        .s_axi_araddr  (s_araddr [SLAVE_IDX_SPI]),
+        .s_axi_arvalid (s_arvalid[SLAVE_IDX_SPI]),
+        .s_axi_arready (s_arready[SLAVE_IDX_SPI]),
+        .s_axi_rdata   (s_rdata  [SLAVE_IDX_SPI]),
+        .s_axi_rresp   (s_rresp  [SLAVE_IDX_SPI]),
+        .s_axi_rvalid  (s_rvalid [SLAVE_IDX_SPI]),
+        .s_axi_rready  (s_rready [SLAVE_IDX_SPI]),
+        .spi_sclk_o    (acl_sclk_o),
+        .spi_mosi_o    (acl_mosi_o),
+        .spi_miso_i    (acl_miso_i),
+        .spi_csn_o     (acl_csn_o)
     );
 
 // -------------------------------------------------------------------------
