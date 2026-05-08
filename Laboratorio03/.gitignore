@@ -18,6 +18,9 @@
 .Xil/
 
 # --- Logs, journals y reportes generados -------------------------------------
+sim/work/
+sim_*.out
+synth_*.out
 *.log
 *.jou
 *.pb
