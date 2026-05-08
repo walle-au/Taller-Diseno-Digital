@@ -81,6 +81,6 @@ Thumbs.db
 *.bak
 *.tmp
 *.orig
-vivado_pid*.str
+vivado_pid*.*
 vivado*.jou
 vivado*.log
