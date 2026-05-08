@@ -1,4 +1,4 @@
-# Microcontrolador RISC-V RV32I con periféricos UART/GPIO
+# SoC RISC-V con periférico SPI y sensor ADXL362
 
 **Curso:** EL3313 Taller de Diseño Digital — I Semestre 2026
 **Institución:** Escuela de Ingeniería Electrónica, Tecnológico de Costa Rica
@@ -11,64 +11,87 @@
 
 ## 1. Descripción del proyecto
 
-Sistema empotrado basado en un núcleo RISC-V RV32I (PicoRV32) implementado sobre FPGA,
-comunicado con una computadora anfitriona por UART. El sistema ejecuta una **calculadora de
-enteros** (suma y resta de números de hasta 4 dígitos) desde un programa en ensamblador
-almacenado en ROM interna.
-
-La arquitectura se basa en un bus **AXI4-Lite** que interconecta el núcleo (master) con
-memoria RAM, memoria ROM y tres periféricos mapeados en memoria (UART, LEDs,
-Switches/Botones).
+Extensión del SoC RISC-V del Lab 2 con un periférico SPI master que comunica
+el núcleo PicoRV32 con el acelerómetro **ADXL362** montado en la Nexys4 DDR.
+El firmware lee los ejes X/Y/Z y los envía por UART a una aplicación Python
+en la laptop que los usa como control de un juego tipo **Asteroids**.
 
 ## 2. Arquitectura
 
-![Diagrama de bloques](docs/figures/block_diagram.svg)
+La arquitectura hereda el bus AXI4-Lite del Lab 2 y agrega un sexto slave (SPI):
 
 ### 2.1 Mapa de memoria
 
-| Rango             | Tamaño   | Bloque            | Descripción                        |
-|-------------------|----------|-------------------|------------------------------------|
-| `0x00000–0x00FFF` | 4 KiB    | ROM               | Programa (512 palabras de 32 bits) |
-| `0x02000`         | 4 B      | GPIO SW/BTN       | Registro de datos (RO)             |
-| `0x02004`         | 4 B      | GPIO LEDs         | Registro de datos (RW)             |
-| `0x02010`         | 4 B      | UART Control      | `[0]=send`, `[1]=new_rx`           |
-| `0x02018`         | 4 B      | UART Data TX      | Dato a enviar                      |
-| `0x0201C`         | 4 B      | UART Data RX      | Último dato recibido               |
-| `0x40000–0x7FFFF` | 256 KiB  | RAM (stack/heap)  | Datos                              |
+| Rango             | Tamaño  | Bloque            | Descripción                        |
+|-------------------|---------|-------------------|------------------------------------|
+| `0x00000–0x00FFF` | 4 KiB   | ROM               | Programa (512 palabras de 32 bits) |
+| `0x02000`         | 4 B     | GPIO SW/BTN       | Registro de datos (RO)             |
+| `0x02004`         | 4 B     | GPIO LEDs         | Registro de datos (RW)             |
+| `0x02010`         | 4 B     | UART Control      | `[0]=send`, `[1]=new_rx`           |
+| `0x02018`         | 4 B     | UART Data TX      | Dato a enviar                      |
+| `0x0201C`         | 4 B     | UART Data RX      | Último dato recibido               |
+| `0x02020`         | 4 B     | SPI Control       | `[0]=start/busy`, `[3]=csn`, `[11:4]=clk_div` |
+| `0x02028`         | 4 B     | SPI TX            | Byte a enviar                      |
+| `0x0202C`         | 4 B     | SPI RX            | Último byte recibido               |
+| `0x40000–0x7FFFF` | 256 KiB | RAM (stack/heap)  | Datos                              |
 
-### 2.2 Convención de señales (AXI4-Lite)
+### 2.2 Periférico SPI
 
-Todos los periféricos exponen una interfaz AXI4-Lite Slave estándar:
-`s_axi_awaddr`, `s_axi_awvalid`, `s_axi_awready`, `s_axi_wdata`, `s_axi_wstrb`,
-`s_axi_wvalid`, `s_axi_wready`, `s_axi_bresp`, `s_axi_bvalid`, `s_axi_bready`,
-`s_axi_araddr`, `s_axi_arvalid`, `s_axi_arready`, `s_axi_rdata`, `s_axi_rresp`,
-`s_axi_rvalid`, `s_axi_rready`. Reset activo-bajo (`s_axi_aresetn`).
+- **Modo:** SPI Mode 0 (CPOL=0, CPHA=0), MSB-first
+- **SCLK:** 6.25 MHz (sysclk / 8, dentro del límite de 8 MHz del ADXL362)
+- **CSn:** controlado por software vía `SPI_CTRL[3]`
+- **Pins FPGA:** `ACL_CSN`=D15, `ACL_MOSI`=F14, `ACL_MISO`=E15, `ACL_SCLK`=F15
+
+### 2.3 Protocolo UART (FPGA → laptop)
+
+Frame de 5 bytes enviado cada 10 ms:
+
+```
++------+------+------+------+------+
+| 0xAA |  X   |  Y   |  Z   | 0x55 |
++------+------+------+------+------+
+```
+
+Comandos laptop → FPGA: `'s'` = start streaming, `'p'` = pause, `'r'` = reset.
 
 ## 3. Estructura del repositorio
 
 ```
-rtl/            Código SystemVerilog sintetizable
-sim/            Testbenches (self-checking)
-sw/             Software en ensamblador + herramientas Python
-ip/             Scripts TCL para regenerar los IP cores
-scripts/        Scripts TCL para crear el proyecto Vivado
-constraints/    Archivo de restricciones (.xdc)
-docs/           Informe técnico, diagramas, figuras
-tests/          Casos de prueba para software
+rtl/
+  bus/           axil_defs.svh, axil_interconnect.sv
+  core/          picorv32.v
+  memory/        rom_axil*.sv, ram_axil*.sv
+  peripherals/
+    spi/         spi_master.sv, spi_axil.sv   ← nuevo en Lab 3
+    uart/        uart_axil.sv, uart_baud_gen.sv, uart_tx.sv, uart_rx.sv
+    gpio_leds_axil.sv, gpio_sw_btn_axil.sv
+  util/          synchronizer.sv, debouncer.sv, reset_sync.sv
+  top.sv
+sim/
+  common/        axil_master_bfm.sv, adxl362_stub.sv
+  tb_spi_master.sv
+  tb_spi_axil.sv
+sw/
+  asm/           blink.s (smoke test)
+  build/         main.coe, bin2coe.py
+  build.sh
+ip/              clk_wiz_main.tcl, rom_program.tcl, data_ram.tcl
+scripts/         create_project.tcl, run_sim.tcl, synth_check.tcl
+constraints/     nexys4ddr.xdc
+docs/
+  research.md    Decisiones de diseño previas al RTL
+  figures/       FSM UART, diagramas
 ```
 
 ## 4. Créditos y licencia
 
 - **PicoRV32** por Claire Xenia Wolf (YosysHQ). Licencia ISC.
-  Repositorio: https://github.com/YosysHQ/picorv32
-- Todo el código propio de este repositorio se distribuye bajo licencia MIT
-  (ver `LICENSE`).
+- Todo el código propio se distribuye bajo licencia MIT.
 - Asistencia de IA en el desarrollo: ver `AI_USAGE.md`.
 
 ## 5. Referencias
 
-1. Patterson & Hennessy. *Computer Organization and Design RISC-V Edition*. Morgan Kaufmann, 2017.
-2. ARM. *AMBA AXI and ACE Protocol Specification*. IHI 0022H, 2021.
-3. Digilent. *Nexys 4 DDR FPGA Board Reference Manual*, 2016.
-4. Xilinx. *AXI4-Lite Slave Interface — Product Guide PG059*, 2022.
-5. Instructivo de laboratorio 2, EL3313, I-2026, TEC.
+1. Analog Devices. *ADXL362 Datasheet Rev D*, 2018.
+2. Digilent. *Nexys 4 DDR FPGA Board Reference Manual*, 2016.
+3. ARM. *AMBA AXI and ACE Protocol Specification* IHI 0022H, 2021.
+4. Instructivo de laboratorio 3, EL3313, I-2026, TEC.
