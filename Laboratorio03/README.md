@@ -72,24 +72,68 @@ sim/
   tb_spi_master.sv
   tb_spi_axil.sv
 sw/
-  asm/           blink.s (smoke test)
-  build/         main.coe, bin2coe.py
+  asm/           blink.s          (smoke test)
+                 devid_test.s     (Etapa 3: sanity SPI -> DEVID_AD en LEDs)
+                 adxl_driver.s    (Etapa 4: driver completo, X en LEDs)
+                 adxl_uart_stream.s (Etapa 5: streaming UART de XYZ)
+  host/          visualizer.py    (Etapa 6a: barras + gráfica en vivo)
+                 asteroids.py     (Etapa 6b: juego Asteroids con ADXL362)
+  ld/            link.ld
+  tools/         bin2coe.py
+  build/         (salidas .elf/.bin/.o/main.coe)
   build.sh
 ip/              clk_wiz_main.tcl, rom_program.tcl, data_ram.tcl
-scripts/         create_project.tcl, run_sim.tcl, synth_check.tcl
+scripts/         create_project.tcl, impl_bitstream.tcl,
+                 run_sim.tcl, synth_check.tcl
 constraints/     nexys4ddr.xdc
 docs/
   research.md    Decisiones de diseño previas al RTL
   figures/       FSM UART, diagramas
 ```
 
-## 4. Créditos y licencia
+## 4. Cómo correr
+
+### 4.1 Firmware en la FPGA (RV32 + ADXL362)
+
+```bash
+bash sw/build.sh sw/asm/adxl_uart_stream.s     # genera sw/build/main.coe
+```
+
+En Vivado, regenerar el IP `rom_program` (toma el `.coe` nuevo) y volver a
+implementar:
+
+```tcl
+reset_target  all [get_ips rom_program]
+generate_target all [get_ips rom_program]
+synth_ip                 [get_ips rom_program]
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 4
+wait_on_run impl_1
+```
+
+Después: `Open Hardware Manager` → `Program Device`.
+
+### 4.2 Aplicación host (laptop)
+
+```bash
+sudo apt install python3-pygame python3-serial    # una vez
+
+python3 sw/host/visualizer.py     # barras + gráfica X/Y/Z en vivo
+python3 sw/host/asteroids.py      # juego controlado por la placa
+```
+
+Ambas apps abren `/dev/ttyUSB1` a 9600 8N1, mandan `'s'` para arrancar el
+streaming, calibran 1 s (placa quieta) y descuentan el offset de gravedad.
+Pasar otro puerto como `argv[1]` si es necesario. Teclas `c` (recalibrar),
+`p`/`s` (pause/resume UART), `r` (reset sensor), `q`/`Esc` (salir).
+
+## 5. Créditos y licencia
 
 - **PicoRV32** por Claire Xenia Wolf (YosysHQ). Licencia ISC.
 - Todo el código propio se distribuye bajo licencia MIT.
 - Asistencia de IA en el desarrollo: ver `AI_USAGE.md`.
 
-## 5. Referencias
+## 6. Referencias
 
 1. Analog Devices. *ADXL362 Datasheet Rev D*, 2018.
 2. Digilent. *Nexys 4 DDR FPGA Board Reference Manual*, 2016.
