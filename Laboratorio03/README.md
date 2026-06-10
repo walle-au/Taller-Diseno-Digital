@@ -138,14 +138,17 @@ streaming, calibran 1 s (placa quieta) y descuentan el offset de gravedad.
 Pasar otro puerto como `argv[1]` si es necesario. Teclas `c` (recalibrar),
 `p`/`s` (pause/resume UART), `r` (reset sensor), `q`/`Esc` (salir).
 
-### 4.3 Video de demostración
+### 4.3 Videos de demostración
 
-Captura de pantalla del SoC corriendo: streaming UART del ADXL362 visualizado en
-vivo con `visualizer.py`.
+**1. Captura de pantalla** — streaming UART del ADXL362 visualizado en vivo con `visualizer.py`:
 
 https://github.com/user-attachments/assets/7a0ab05f-f4de-4886-ad84-f4f89021c7db
 
-Descarga directa (backup versionado en el repo): [`docs/DemoLab.webm`](docs/DemoLab.webm)
+**2. Placa en mano** — la Nexys4 DDR moviéndose para controlar el sistema (filmado con celular):
+
+https://github.com/user-attachments/assets/c2e5a701-4e9e-49b5-8e94-b6b27df1a69a
+
+Descarga directa (backup en el repo): [`docs/DemoLab.webm`](docs/DemoLab.webm) · [`docs/Demo2.mp4`](docs/Demo2.mp4)
 
 ## 5. Créditos y licencia
 
