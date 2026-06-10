@@ -51,9 +51,9 @@ FPS                 = 60
 X_DEADZONE          = 8       # LSB; |X| menor = sin rotación
 ROT_SPEED_MAX       = 4.0     # grados/frame al máximo tilt (X = ±128)
 Y_THRUST_THRESHOLD  = 16      # LSB; Y > esto = thrust ON
-THRUST_FORCE        = 0.18
-FRICTION            = 0.992
-MAX_SHIP_SPEED      = 7.0
+THRUST_FORCE        = 0.11
+FRICTION            = 0.988
+MAX_SHIP_SPEED      = 4.5
 
 # Disparo por shake (gesto vertical)
 SHAKE_THRESHOLD     = 24      # |ΔZ| en LSB entre samples
