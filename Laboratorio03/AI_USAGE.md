@@ -156,4 +156,4 @@ El autor asume **responsabilidad completa** por todo el código contenido en
 este repositorio, independientemente de su origen, y declara comprender cada
 línea entregada.
 
-Walter-Alexander-Esteban-Allan — 12 de mayo de 2026
+Walter-Alexander-Esteban-Allan — 9 junio de 2026
