@@ -7,7 +7,7 @@ Implementación del bus interno que conecta el core con todos los slaves del sis
 | Archivo | Descripción |
 |---|---|
 | `axil_defs.svh` | Header global con anchos del bus, mapa de memoria (bases y máscaras), códigos de respuesta AXI e índices de slaves. Marcado como **Global Include** en Vivado. |
-| `axil_interconnect.sv` | Interconnect 1 master → 5 slaves. Decodificación combinacional de direcciones, FSMs independientes para read/write, generación de DECERR cuando la dirección no matchea. |
+| `axil_interconnect.sv` | Interconnect 1 master → 6 slaves. Decodificación combinacional de direcciones, FSMs independientes para read/write, generación de DECERR cuando la dirección no matchea. |
 
 ### `core/` — Procesador RISC-V
 
@@ -31,6 +31,7 @@ Implementación del bus interno que conecta el core con todos los slaves del sis
 | `gpio_leds_axil.sv` | Slave AXI-Lite para los 12 LEDs controlados por programa. Mapeado a `0x02004`. |
 | `gpio_sw_btn_axil.sv` | Slave AXI-Lite RO para 16 switches + 4 botones. Incluye sincronizador 2-FF y debouncer de 10 ms. Mapeado a `0x02000`. |
 | `uart/` | Subcarpeta con la implementación completa del UART (ver abajo). |
+| `spi/` | Subcarpeta con el periférico SPI master para el ADXL362 (Lab 3, ver abajo). |
 
 #### `peripherals/uart/`
 
@@ -40,6 +41,16 @@ Implementación del bus interno que conecta el core con todos los slaves del sis
 | `uart_baud_gen.sv` | Generador de tick para TX. Tick cada 5208 ciclos a 50 MHz = 9600 baud. |
 | `uart_tx.sv` | FSM transmisor 8N1. Estados: IDLE → START → DATA (×8) → STOP. |
 | `uart_rx.sv` | FSM receptor 8N1 autosuficiente. Cuenta ciclos directamente (no usa tick externo) para evitar drift acumulado. Muestrea en el centro de cada bit. |
+
+#### `peripherals/spi/` — SPI master (Lab 3)
+
+Periférico nuevo del Lab 3. Comunica el core con el acelerómetro **ADXL362**
+onboard de la Nexys4 DDR. SPI Mode 0 (CPOL=0, CPHA=0), 8 bits MSB-first.
+
+| Archivo | Descripción |
+|---|---|
+| `spi_master.sv` | Núcleo SPI master. FSM de 3 estados `S_IDLE → S_LOW → S_HIGH`: presenta MOSI en `S_LOW`, muestrea MISO en el flanco de subida (`S_LOW→S_HIGH`) y desplaza en el de bajada. `SCLK = sysclk / (2 · clk_div)`. El control de CSn **no** está aquí (lo maneja el wrapper por software). |
+| `spi_axil.sv` | Wrapper AXI-Lite del SPI. Expone CTRL (`0x02020`: `[0]` start/busy, `[3]` csn, `[11:4]` clk_div), TX (`0x02028`) y RX (`0x0202C`). Default `clk_div=4` → SCLK = 6.25 MHz. |
 
 ### `util/` — Utilitarios
 
@@ -56,8 +67,9 @@ Top-level del SoC. Instancia y conecta:
 - PLL (clk_wiz_main): 100 MHz → 50 MHz
 - `reset_sync`: maneja BTNC + locked del PLL
 - `picorv32_axi` con `STACKADDR=0x58FFC` y `PROGADDR_RESET=0x0`
-- `axil_interconnect` (1 master → 5 slaves)
-- 5 slaves: ROM, RAM, GPIO_SW, GPIO_LED, UART
+- `axil_interconnect` (1 master → 6 slaves)
+- 6 slaves: ROM, RAM, GPIO_SW, GPIO_LED, UART, SPI
+- `spi_axil` para el ADXL362 onboard (Lab 3)
 - LEDs de debug en los 4 bits altos:
   - LED 12: `pll_locked`
   - LED 13: `rst_n`
@@ -84,9 +96,13 @@ Top-level del SoC. Instancia y conecta:
 | `0x02010` | UART_CTRL | RW | 1 word |
 | `0x02018` | UART_TX | RW | 1 word |
 | `0x0201C` | UART_RX | RO | 1 word |
+| `0x02020` | SPI_CTRL | RW | 1 word (`[0]` start/busy, `[3]` csn, `[11:4]` clk_div) |
+| `0x02028` | SPI_TX | RW | 1 word (byte a enviar) |
+| `0x0202C` | SPI_RX | RO | 1 word (último byte recibido) |
 | `0x40000 - 0x7FFFF` | RAM | RW | 256 KiB |
 
-Las direcciones siguen el mapa de memoria definido en el instructivo del Lab 2.
+Las direcciones siguen el mapa de memoria del instructivo (Lab 2 + el bloque
+SPI agregado en el Lab 3, definidas en `bus/axil_defs.svh`).
 
 ## Dependencias
 
@@ -98,12 +114,14 @@ Las direcciones siguen el mapa de memoria definido en el instructivo del Lab 2.
 
 ## Testbenches
 
-Los testbenches asociados están en `../sim/`:
+Los testbenches del Lab 3 están en `../sim/` (ver `../sim/README.md` para el
+detalle de cada caso y cómo correrlos):
 
-- `tb_axil_interconnect.sv` — 36 checks (ruteo + DECERR)
-- `tb_gpio_leds_axil.sv` — 7 checks
-- `tb_gpio_sw_btn_axil.sv` — 4 checks (con debounce acelerado)
-- `tb_uart_axil.sv` — 7 checks (TX, RX, send auto-clear, new_rx)
-- `tb_uart_loopback.sv` — 8 bytes round-trip
+- `tb_spi_master.sv` — núcleo SPI: intercambio de 8 bits, conteo de flancos de
+  SCLK, frecuencia 6.25 MHz, handshake `busy_o`/`done_o`.
+- `tb_spi_axil.sv` — wrapper + modelo del ADXL362: defaults del CTRL, lectura de
+  `DEVID_AD` (`0xAD`) y lectura ráfaga de XYZ.
+- `common/adxl362_stub.sv` — modelo simplificado del ADXL362 (SPI Mode 0).
+- `common/axil_master_bfm.sv` — BFM master AXI-Lite con tareas `axil_read`/`axil_write`.
 
 Todos los testbenches son self-checking con un contador global de errores y una función `check(cond, msg)` para reportar resultados.

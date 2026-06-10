@@ -1,7 +1,10 @@
 # =============================================================================
 # .gitignore - Proyecto FPGA con Vivado
-# EL3313 Taller de Diseno Digital - Lab 2
+# EL3313 Taller de Diseno Digital - Lab 3
 # =============================================================================
+
+# --- Notas privadas (no se suben a GitHub) -----------------------------------
+docs/NOTAS-demo-lab3.md
 
 # --- Proyecto Vivado (se regenera con scripts/create_project.tcl) ------------
 # build/

@@ -12,7 +12,7 @@ Por eso, este repo solo versiona los **scripts Tcl** (declarativos, ~50 líneas 
 Con un proyecto Vivado abierto, en la consola Tcl:
 
 ```tcl
-cd /ruta/al/repo/Laboratorio02
+cd /ruta/al/repo/Laboratorio03
 source ip/clk_wiz_main.tcl
 source ip/data_ram.tcl
 source ip/rom_program.tcl

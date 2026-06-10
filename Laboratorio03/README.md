@@ -18,6 +18,9 @@ en la laptop que los usa como control de un juego tipo **Asteroids**.
 
 ## 2. Arquitectura
 
+Vista general del sistema en `docs/figures/pipelinefisico.pdf` (pipeline
+físico → pantalla) y arquitectura del SoC en `docs/figures/4SoC.pdf`.
+
 La arquitectura hereda el bus AXI4-Lite del Lab 2 y agrega un sexto slave (SPI):
 
 ### 2.1 Mapa de memoria
@@ -36,6 +39,8 @@ La arquitectura hereda el bus AXI4-Lite del Lab 2 y agrega un sexto slave (SPI):
 | `0x40000–0x7FFFF` | 256 KiB | RAM (stack/heap)  | Datos                              |
 
 ### 2.2 Periférico SPI
+
+Cronograma de una transacción (lectura de registro) en `docs/figures/spi_timing.pdf`.
 
 - **Modo:** SPI Mode 0 (CPOL=0, CPHA=0), MSB-first
 - **SCLK:** 6.25 MHz (sysclk / 8, dentro del límite de 8 MHz del ADXL362)
@@ -68,6 +73,7 @@ rtl/
   util/          synchronizer.sv, debouncer.sv, reset_sync.sv
   top.sv
 sim/
+  README.md      Qué prueba cada testbench y cómo correrlos
   common/        axil_master_bfm.sv, adxl362_stub.sv
   tb_spi_master.sv
   tb_spi_axil.sv
@@ -88,7 +94,12 @@ scripts/         create_project.tcl, impl_bitstream.tcl,
 constraints/     nexys4ddr.xdc
 docs/
   research.md    Decisiones de diseño previas al RTL
-  figures/       FSM UART, diagramas
+  figures/       Diagramas del informe (PDF):
+                   4SoC.pdf             arquitectura del SoC (6 slaves)
+                   diagram_flow.pdf     flujo del firmware (main_loop)
+                   pipelinefisico.pdf   pipeline físico → pantalla
+                   spi_timing.pdf       cronograma SPI (lectura de registro)
+                   FSM Receptor UART.pdf
 ```
 
 ## 4. Cómo correr
