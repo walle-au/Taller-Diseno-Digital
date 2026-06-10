@@ -138,6 +138,15 @@ streaming, calibran 1 s (placa quieta) y descuentan el offset de gravedad.
 Pasar otro puerto como `argv[1]` si es necesario. Teclas `c` (recalibrar),
 `p`/`s` (pause/resume UART), `r` (reset sensor), `q`/`Esc` (salir).
 
+### 4.3 Video de demostración
+
+Captura de pantalla del SoC corriendo: streaming UART del ADXL362 visualizado en
+vivo con `visualizer.py`.
+
+https://github.com/user-attachments/assets/7a0ab05f-f4de-4886-ad84-f4f89021c7db
+
+Descarga directa (backup versionado en el repo): [`docs/DemoLab.webm`](docs/DemoLab.webm)
+
 ## 5. Créditos y licencia
 
 - **PicoRV32** por Claire Xenia Wolf (YosysHQ). Licencia ISC.
