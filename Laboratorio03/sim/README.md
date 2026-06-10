@@ -37,6 +37,4 @@ vivado -mode batch -source scripts/run_sim.tcl
 El script compila los fuentes RTL de `../rtl/`, los modelos de `common/` y el
 testbench seleccionado, y corre la simulación reportando el resumen de checks.
 
-> Para la revisión, el instructivo pide **simulación post-síntesis con
-> temporización** además de la funcional. Correr la misma TB sobre el netlist
-> post-síntesis (timing sim) valida que el SPI cumple con el SCLK objetivo.
+
