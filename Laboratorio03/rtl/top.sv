@@ -1,7 +1,6 @@
 // =============================================================================
 // Archivo      : rtl/top.sv
 // Autor        : WallyCR
-// Fecha        : 20 de abril de 2026
 // Curso        : EL3313 - Taller de Diseño Digital (TEC, VII semestre)
 // Descripción  : Top-level del SoC RISC-V para FPGA Nexys4 DDR.
 //                Integra:
