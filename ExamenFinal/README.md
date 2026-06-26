@@ -1,3 +1,14 @@
+# Examen Final - Taller de Diseño Digital
+
+## Información del estudiante
+
+**Estudiante:** Esteban Vargas Fernández
+**Carné:** 2023395790
+**Curso:** EL3313 - Taller de Diseño Digital
+**Institución:** Tecnológico de Costa Rica
+
+---
+
 # Implementación de FSM para suma `AB + CD` mediante UART
 
 ## Descripción general
@@ -116,9 +127,18 @@ Se realizaron las siguientes pruebas:
 
 ---
 
-## Resultados de consola
+<img width="1187" height="146" alt="image" src="https://github.com/user-attachments/assets/abf1c9c3-0ab7-4cc0-b96c-8400bc879a5b" />
 
-La simulación en Vivado/XSim produjo los siguientes resultados:
+
+Los resultados de simulación obtenidos en la consola de Vivado/XSim se muestran en la siguiente imagen:
+
+```markdown
+![Resultados de consola](docs/consola_simulacion.png)
+```
+
+<!-- Pegar en la carpeta docs una imagen llamada consola_simulacion.png -->
+
+La salida esperada de la simulación autoverificable es:
 
 ```text
 OK: A=1 B=2 C=3 D=4 | resultado=0x2e (46)
@@ -131,21 +151,67 @@ Estos mensajes indican que el testbench verificó automáticamente los resultado
 
 ---
 
+<img width="925" height="739" alt="image" src="https://github.com/user-attachments/assets/e16abca6-be74-49ea-b9e3-f7789ef4d5b5" />
+
+
+El waveform permite observar el comportamiento interno del sistema durante la recepción, cálculo y transmisión del resultado.
+
+```markdown
+![Waveform de simulación](docs/waveform_simulacion.png)
+```
+
+<!-- Pegar en la carpeta docs una imagen llamada waveform_simulacion.png -->
+
+En el waveform se recomienda observar las siguientes señales:
+
+```text
+uart_rx_i
+uart_tx_o
+rx_valid
+rx_data
+digit
+state_q
+mem_wr
+mem_addr
+acc_out
+tx_data
+tx_start
+tx_busy
+tx_done
+```
+
+Para la primera prueba, correspondiente a la entrada `"1" "2" "3" "4"`, el sistema calcula:
+
+```text
+AB = 12
+CD = 34
+AB + CD = 46
+```
+
+Por lo tanto, el acumulador y el dato transmitido deben contener:
+
+```text
+acc_out = 46
+tx_data = 46
+```
+
+---
+
 ## Archivos principales
 
 ```text
-rtl/uart_sum_top.sv       Módulo superior
-rtl/fsm_control.sv        Máquina de estados finita
-rtl/ascii_to_digit.sv     Conversor ASCII a número
-rtl/digit_mem_4x4.sv      Memoria de cuatro dígitos
-rtl/mux_x1_x10.sv         Selector x1/x10
-rtl/adder_8bit.sv         Sumador de 8 bits
-rtl/acc_reg.sv            Registro acumulador
-rtl/sync_2ff.sv           Sincronizador de entrada RX
-rtl/uart/uart_rx.sv       Receptor UART
-rtl/uart/uart_tx.sv       Transmisor UART
-rtl/uart/uart_baud_gen.sv Generador de baudrate para TX
-sim/tb_uart_sum_top.sv    Testbench autoverificable
+rtl/uart_sum_top.sv        Módulo superior
+rtl/fsm_control.sv         Máquina de estados finita
+rtl/ascii_to_digit.sv      Conversor ASCII a número
+rtl/digit_mem_4x4.sv       Memoria de cuatro dígitos
+rtl/mux_x1_x10.sv          Selector x1/x10
+rtl/adder_8bit.sv          Sumador de 8 bits
+rtl/acc_reg.sv             Registro acumulador
+rtl/sync_2ff.sv            Sincronizador de entrada RX
+rtl/uart/uart_rx.sv        Receptor UART
+rtl/uart/uart_tx.sv        Transmisor UART
+rtl/uart/uart_baud_gen.sv  Generador de baudrate para TX
+sim/tb_uart_sum_top.sv     Testbench autoverificable
 ```
 
 ---
